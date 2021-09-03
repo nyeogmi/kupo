@@ -1,0 +1,15 @@
+[package]
+name = "kupo"
+version = "0.1.0"
+authors = ["Nyeogmi <economicsbat@gmail.com>"]
+description = "debugger for moogle, logic programming language"
+readme = "README.md"
+homepage = "https://github.com/nyeogmi/kupo"
+repository = "https://github.com/nyeogmi/kupo"
+license = "MIT OR Apache-2.0"
+keywords = ["database"] 
+categories = ["database-implementations"]
+edition = "2018"
+
+[dependencies]
+moogle = {version = "0.3"}
