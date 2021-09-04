@@ -1,9 +1,11 @@
 #![feature(type_alias_impl_trait)]
 
+mod runtime;
+mod frontend;
+
 use std::fmt::Debug;
 
 use crate::runtime::{Bytecode, Instruction, Procedure, Register, TypeData, UntaggedValue, VM};
-mod runtime;
 
 fn main() {
     let mut args = runtime::StructBuilder::new();

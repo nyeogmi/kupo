@@ -1,0 +1,17 @@
+view [@x NPC, @y String] in lonely_vampire {
+    @x in vampire,
+    @y := true_name(@x),
+    @x in lonely,
+}
+or {
+    [@x, @y] in lonely_vampires_monthly
+}
+
+def main() {
+    @s := "Hello, world!"
+    for [@x, @y] in lonely_vampire or [@x, @y] in friendly_bat { 
+        print(@x)
+        print(@y)
+        print(@s)
+    }
+}
