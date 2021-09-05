@@ -1,6 +1,8 @@
+use crate::frontend::lexer::Token;
 use crate::frontend::located::Located;
 use crate::frontend::{lexer::Grouping};
 
+use super::grouping_helpers::DelimitedMany;
 use super::internal_ast::*;
 
 use super::{Parse, Parser, error_helpers::kpe};
@@ -8,11 +10,17 @@ use super::{Parse, Parser, error_helpers::kpe};
 
 impl<'a> Parser<'a> {
     pub fn parse_module(&mut self) -> Parse<ASTModule> {
-        let items = self.many(
-            |s| s.ts.any(), 
-            |s| s.parse_item()
-        );
-        items.locmap(|items| ASTModule { items })
+        let mut delimit = DelimitedMany::braces_basis();
+        delimit.separator = None;
+        delimit.lhs = None;
+        delimit.rhs = (Token::EOF, "end of file");
+
+        self.group(
+            delimit,
+            |s| s.parse_item(),
+            |items| ASTModule::Module { items },
+            ASTModule::Invalid
+        )
     }
 
     fn parse_item(&mut self) -> Parse<ASTItem> {
@@ -32,91 +40,121 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_def(&mut self) -> Parse<ASTDef> {
-        let def = if let Some(def) = self.ts.pop_keyword("def") { def } else {
-            return self.give_up("expected def", ASTDef::Invalid);
-        };
-        let name = if let Some(fn_name) = self.ts.pop_identifier() { fn_name } else {
-            return def.merge_r(self.give_up(
-                "function name expected",
-                ASTDef::Invalid
-            ));
-        };
-        let args = self.parse_args_parens();
-        let body = self.parse_block();
+        self.located(|s| {
+            if s.ts.pop_keyword("def").is_none() {
+                return ASTDef::Invalid(kpe("expected def"));
+            };
+            let name = if let Some(fn_name) = s.ts.pop_identifier() { fn_name } else {
+                return ASTDef::Invalid(kpe("function name expected"));
+            };
+            let args = s.parse_args_parens();
 
-        def.merge_l(&body).replace(ASTDef::Def {
-            name,
-            args,
-            body
+            let return_type = if s.ts.peek_eq(&Token::Grouping(Grouping::LBrack)) {
+                Some(s.parse_types_bracks())
+            } else {
+                None
+            };
+
+            let body = s.parse_block();
+
+            ASTDef::Def { name, args, return_type, body }
         })
     }
 
     fn parse_view(&mut self) -> Parse<ASTView> {
-        let loc = self.ts.location();
-        let _ = if let Some(view) = self.ts.pop_keyword("view") { view } else {
-            return self.give_up("expected view", ASTView::Invalid);
-        };
-        let args = self.parse_args_bracks();
+        self.located(|s| {
+            if s.ts.pop_keyword("view").is_none() {
+                return ASTView::Invalid(kpe("expected view"));
+            };
+            let args = s.parse_args_bracks();
 
-        let _ = if let Some(in_) = self.ts.pop_keyword("in") { in_ } else {
-            return self.give_up("expected in", ASTView::Invalid)
-        };
+            if s.ts.pop_keyword("in").is_none() {
+                return ASTView::Invalid(kpe("expected in"));
+            };
 
-        let name = if let Some(name) = self.ts.pop_identifier() { name } else {
-            return self.give_up(
-                "view name expected",
-                ASTView::Invalid
-            );
-        };
+            let name = if let Some(name) = s.ts.pop_identifier() { name } else {
+                return ASTView::Invalid(kpe("view name expected"));
+            };
 
-        let body = self.parse_block_query_expression();
-        let mut clauses = vec![body];
+            let body = s.parse_block_query_expression();
+            let mut clauses = vec![body];
 
-        while let Some(or_) = self.ts.pop_keyword("or") {
-            let c = or_.merge_r(self.parse_block_query_expression());
-            loc.merge_l(&c);
-            clauses.push(c);
-        }
+            while s.ts.pop_keyword("or").is_some() {
+                clauses.push(s.parse_block_query_expression());
+            }
 
-        return loc.replace(ASTView::View { name, args, clauses })
+            return ASTView::View { name, args, clauses }
+        })
     }
 
     fn parse_args_parens(&mut self) -> Parse<ASTArgs> {
-        self.parens(
-            |s| {
-                ASTArgs::Args { args: s.separated(
-                    |s,| s.peek_arg(),
-                    |s,| s.parse_arg(),
-                    Grouping::Comma,
-                ).value}
-            },
-            ASTArgs::Invalid
-        )
-    }
-
-    fn parse_args_bracks(&mut self) -> Parse<ASTArgs> {
-        self.brack_comma_sep(
-            |s| s.peek_arg(),
+        let mut delimit = DelimitedMany::parens_basis();
+        delimit.separator = Some(Token::Grouping(Grouping::Comma));
+        self.group(
+            delimit,
             |s| s.parse_arg(),
             |args| ASTArgs::Args { args },
             ASTArgs::Invalid
         )
     }
 
-    fn peek_arg(&mut self) -> bool { self.ts.peek_identifier() }
+    fn parse_args_bracks(&mut self) -> Parse<ASTArgs> {
+        let mut delimit = DelimitedMany::brackets_basis();
+        delimit.can_be_bare = true;
+        delimit.separator = Some(Token::Grouping(Grouping::Comma));
+        self.group(
+            delimit,
+            |s| s.parse_arg(),
+            |args| ASTArgs::Args { args },
+            ASTArgs::Invalid
+        )
+    }
+
     fn parse_arg(&mut self) -> Located<ASTArg> {
-        let loc = self.ts.location();
-        let name = if let Some(name) = self.ts.pop_variable() { name } else {
-            return self.give_up("expected string", ASTArg::Invalid);
-        };
-        let type_name = self.ts.pop_identifier();
-        match type_name {
-            Some(tname) => {
-                loc.merge_l(&name).merge_l(&tname).replace(ASTArg::Arg { name, type_name: Some(tname) })
+        self.located(|s| {
+            let name = if let Some(name) = s.ts.pop_variable() { name } else {
+                return ASTArg::Invalid(kpe("expected string"));
+            };
+            let type_name = s.parse_optional_type();
+            let loc = type_name.location();
+            let type_name = match type_name.value {
+                Some(x) => Some(loc.replace(x)),
+                None => None,
+            };
+            ASTArg::Arg { name, type_name }
+        })
+    }
+
+    fn parse_types_bracks(&mut self) -> Parse<ASTTypes> {
+        let mut delimit = DelimitedMany::brackets_basis();
+        delimit.separator = Some(Token::Grouping(Grouping::Comma));
+        self.group(
+            delimit,
+            |s| s.parse_type(),
+            |types| ASTTypes::Types { types },
+            ASTTypes::Invalid
+        )
+    }
+
+    fn parse_type(&mut self) -> Parse<ASTType> {
+        self.located(|s| {
+            if let Some(name) = s.ts.pop_identifier() {
+                ASTType::Type { name }
             }
-            None => {
-                loc.merge_l(&name).replace(ASTArg::Arg { name, type_name: None })
+            else {
+                ASTType::Invalid(kpe("expected type"))
             }
-        }
+        })
+    }
+
+    fn parse_optional_type(&mut self) -> Parse<Option<ASTType>> {
+        self.located(|s| {
+            if let Some(name) = s.ts.pop_identifier() {
+                Some(ASTType::Type { name })
+            }
+            else {
+                None
+            }
+        })
     }
 }

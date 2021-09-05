@@ -3,12 +3,11 @@ use crate::frontend::{lexer::Token, located::Located};
 pub struct TStream<'a> {
     tokens: &'a [Located<Token>],
     eof: Located<Token>,
-    offset: usize,
 }
 
 impl<'a> TStream<'a> {
     pub fn new(tokens: &'a [Located<Token>], eof: Located<()>) -> Self {
-        TStream { tokens, eof: eof.replace(Token::EOF), offset: 0 }
+        TStream { tokens, eof: eof.replace(Token::EOF) }
     }
 
     pub fn location(&self) -> Located<()> {
@@ -18,12 +17,9 @@ impl<'a> TStream<'a> {
     }
 
     pub fn advance(&mut self, amt: usize) {
-        self.tokens = &self.tokens[amt..];
-        self.offset += amt;
-    }
-
-    pub fn any(&self) -> bool {
-        self.tokens.len() > 0
+        if !self.tokens.is_empty() { 
+            self.tokens = &self.tokens[amt..];
+        }
     }
 
     pub fn pop_tpred(&mut self, f: impl Fn(&Token) -> bool) -> Option<Located<Token>> {
@@ -40,16 +36,19 @@ impl<'a> TStream<'a> {
     }
 
     pub fn peek_tpred(&self, f: impl Fn(&Token) -> bool) -> bool {
-        let t = if let Some(t) = self.tokens.iter().nth(0) {
-            t
-        } else { &self.eof };
+        let t = if let Some(t) = self.tokens.iter().nth(0) { t } 
+        else { &self.eof };
 
         f(&t.value)
     }
 
+    pub fn pop_eq(&mut self, t: &Token) -> Option<Located<Token>> {
+        self.pop_tpred(|t2| t2 == t)
+    }
+
     pub fn pop_keyword(&mut self, s: &str) -> Option<Located<Token>> {
         self.pop_tpred(|t| match t { 
-            Token::Identifier(i) if i == s => true,
+            Token::Keyword(i) if i == s => true,
             _ => false,
         })
     }
@@ -82,6 +81,10 @@ impl<'a> TStream<'a> {
 
     pub fn pop_any(&mut self) -> Located<Token> {
         self.pop_tpred(|_| true).unwrap()
+    }
+
+    pub fn peek_eq(&self, t: &Token) -> bool {
+        self.peek_tpred(|t2| t2 == t)
     }
     
     pub fn peek_keyword(&self, s: &str) -> bool {

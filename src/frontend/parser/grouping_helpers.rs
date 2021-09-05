@@ -1,132 +1,105 @@
-use crate::frontend::{lexer::{Grouping, Token}, located::Located};
+use crate::frontend::{lexer::{Grouping, Token}, located::Located, parser::error_helpers::kpe};
 
-use super::{Parse, Parser, internal_ast::KupoParseError};
+use super::{Parser, internal_ast::KupoParseError};
+
+pub struct DelimitedMany {
+    pub can_be_bare: bool,
+    pub consume_rhs: bool,
+    pub lhs: Option<(Token, &'static str)>,
+    pub rhs: (Token, &'static str),
+    pub separator: Option<Token>,
+}
+
+impl DelimitedMany {
+    pub fn parens_basis() -> Self {
+        DelimitedMany {
+            can_be_bare: false,
+            consume_rhs: true,
+            lhs: Some((Token::Grouping(Grouping::LParen), "left paren expected")),
+            rhs: (Token::Grouping(Grouping::RParen), "right paren expected"),
+            separator: None,
+        }
+    }
+
+    pub fn brackets_basis() -> Self {
+        DelimitedMany {
+            can_be_bare: false,
+            consume_rhs: true,
+            lhs: Some((Token::Grouping(Grouping::LBrack), "left bracket expected")),
+            rhs: (Token::Grouping(Grouping::RBrack), "right bracket expected"),
+            separator: None,
+        }
+    }
+
+    pub fn braces_basis() -> Self {
+        DelimitedMany {
+            can_be_bare: false,
+            consume_rhs: true,
+            lhs: Some((Token::Grouping(Grouping::LBrace), "left bracket expected")),
+            rhs: (Token::Grouping(Grouping::RBrace), "right bracket expected"),
+            separator: None,
+        }
+    }
+}
 
 impl<'a> Parser<'a> {
-    pub fn parens<T>(
-        &mut self, 
-        f: impl Fn(&mut Self) -> T,
-        fail: impl Fn(KupoParseError) -> T,
-    ) -> Parse<T> {
-        self.grouped(
-            f, fail,
-            Grouping::LParen, Grouping::RParen,
-            "left paren expected", "right paren expected"
-        )
-    }
-
-    pub fn brackets<T>(
-        &mut self, 
-        f: impl Fn(&mut Self) -> T,
-        fail: impl Fn(KupoParseError) -> T,
-    ) -> Parse<T> {
-        self.grouped(
-            f, fail,
-            Grouping::LBrack, Grouping::RBrack, 
-            "left bracket expected", "right bracket expected"
-        )
-    }
-
-    pub fn braces<T>(
-        &mut self, 
-        f: impl Fn(&mut Self) -> T,
-        fail: impl Fn(KupoParseError) -> T,
-    ) -> Parse<T> {
-        self.grouped(
-            f, fail,
-            Grouping::LBrace, Grouping::RBrace, 
-            "left brace expected", "right brace expected"
-        )
-    }
-
-    fn grouped<T>(
-        &mut self, 
-        f: impl Fn(&mut Self) -> T,
-        fail: impl Fn(KupoParseError) -> T,
-        l: Grouping, r: Grouping, 
-        lmsg: &str, rmsg: &str
-    ) -> Parse<T> {
-        let loc = self.ts.location();
-        let _ = if let Some(lbrace) = 
-            self.ts.pop_tpred(|t| t == &Token::Grouping(l)) { lbrace } else {
-                return self.give_up(lmsg, fail)
-            };
-
-        let result = f(self);
-
-        let rbrace = if let Some(rbrace) = 
-            self.ts.pop_tpred(|t| t == &Token::Grouping(r)) { rbrace } else {
-                return self.give_up(rmsg, fail)
-            };
-
-        loc.merge_r(rbrace).replace(result)
-    }
-
-    pub fn separated<T>(
-        &mut self,
-
-        // peek: if this returns true, we must keep parsing; otherwise break
-        // needed because we're allowed to have a terminator that isn't followed by another item
-        peek: impl Fn(&mut Self) -> bool,  
-        parse: impl Fn(&mut Self) -> T,
-        separator: Grouping,
-    ) -> Located<Vec<T>> {
-        let loc = self.ts.location();
-        let mut xs = vec![];
-
-        loop {
-            if !peek(self) { break; }
-
-            let x = parse(self);
-            xs.push(x);
-
-            let found_terminator = self.ts.pop_tpred(|t| t == &Token::Grouping(separator)).is_some();
-            if !found_terminator { break; }
-        }
-
+    pub fn located<T>(&mut self, f: impl FnOnce(&mut Self) -> T) -> Located<T> {
+        let loc1 = self.ts.location();
+        let t = f(self);
         let loc2 = self.ts.location();
-        loc.merge_l(&loc2).replace(xs)
+        loc1.merge_l(&loc2).replace(t)
     }
 
-    pub fn many<T>(
+    pub fn group<T: std::fmt::Debug, Ts>(
         &mut self,
-
-        // peek: if this returns true, we must keep parsing; otherwise break
-        // needed because we're allowed to have a terminator that isn't followed by another item
-        peek: impl Fn(&mut Self) -> bool,  
-        parse: impl Fn(&mut Self) -> T,
-    ) -> Located<Vec<T>> {
-        let loc = self.ts.location();
-        let mut xs = vec![];
-
-        loop {
-            if !peek(self) { break; }
-
-            let x = parse(self);
-            xs.push(x);
-        }
-
-        let loc2 = self.ts.location();
-        loc.merge_l(&loc2).replace(xs)
-    }
-
-    // brackets are optional for exactly one item
-    pub fn brack_comma_sep<T, Ts>(
-        &mut self,
-        peek: impl Fn(&mut Self) -> bool,
+        rules: DelimitedMany,
         parse: impl Fn(&mut Self) -> T,
         integrate: impl Fn(Vec<T>) -> Ts,
         fail: impl Fn(KupoParseError) -> Ts,
     ) -> Located<Ts> {
-        if self.ts.peek_tpred(|t| t == &Token::Grouping(Grouping::LBrack)) {
-            self.brackets(|s| 
-                integrate(s.separated(&peek, &parse, Grouping::Comma).value
-            ), fail)
-        } else {
-            let loc1 = self.ts.location();
-            let x = parse(self);
-            let loc2 = self.ts.location();
-            loc1.merge_l(&loc2).replace(integrate(vec![x]))
-        }
+        return self.located(|s| {
+            if let Some((lhs, lmsg)) = rules.lhs {
+                if s.ts.pop_eq(&lhs).is_none() {
+                    if rules.can_be_bare {
+                        return integrate(vec![parse(s)]);
+                    }
+                    return fail(kpe(lmsg));
+                }
+            }
+
+            let mut xs = vec![];
+
+            loop {
+                if s.ts.peek_eq(&rules.rhs.0) { break; }
+                if s.ts.peek_eq(&Token::EOF) { return fail(kpe("found EOF before end of group")); }
+
+                let x = parse(s);
+                println!("got {:?}", x);
+                xs.push(x);
+
+                if let Some(sep) = &rules.separator {
+                    let found_terminator = s.ts.pop_eq(&sep).is_some();
+                    if !found_terminator { 
+                        println!("breaking: did not find: {:?}", sep);
+                        break; 
+                    }
+                }
+            }
+
+            let (rhs, rmsg) = rules.rhs;
+            if rules.consume_rhs {
+                println!("looking for: {:?}", rhs);
+                if s.ts.pop_eq(&rhs).is_none() {
+                    println!("did not find it");
+                    return fail(kpe(rmsg));
+                };
+            } else {
+                if !s.ts.peek_eq(&rhs) {
+                    return fail(kpe(rmsg));
+                };
+            }
+
+            integrate(xs)
+        })
     }
 }

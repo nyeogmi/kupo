@@ -2,14 +2,15 @@ mod error_helpers;
 mod expression;
 mod grouping_helpers;
 mod internal_ast;
+mod precedence;
+mod query_expression;
 mod statement;
 mod structural;
-mod query_expression;
 mod tstream;
 
 use tstream::*;
 
-use self::internal_ast::*;
+pub use self::internal_ast::*;
 
 use super::{lexer::{Token}, located::Located};
 

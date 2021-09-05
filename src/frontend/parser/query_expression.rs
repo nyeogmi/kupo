@@ -1,23 +1,38 @@
 use crate::frontend::lexer::{Grouping, Operator, Token};
 
 use super::error_helpers::kpe;
+use super::grouping_helpers::DelimitedMany;
 use super::{Parse, Parser};
 
 use super::internal_ast::*;
 
 impl<'a> Parser<'a> {
     pub fn parse_block_query_expression(&mut self) -> Parse<ASTQueryExpression> {
-        // TODO: Check for brackets, then parse query expression
-        self.braces(|s| s.parse_query_expression().value, ASTQueryExpression::Invalid)
+        let mut delimit = DelimitedMany::braces_basis();
+        delimit.separator = Some(Token::Grouping(Grouping::Comma));
+
+        self.group(
+            delimit,
+            |s| s.parse_query_goal(),
+            |items| ASTQueryExpression::QExpression { items },
+            ASTQueryExpression::Invalid,
+        )
     }
 
-    pub fn parse_query_expression(&mut self) -> Parse<ASTQueryExpression> {
-        let items = self.separated(
-            |s| !s.ts.peek_tpred(|t| t == &Token::Grouping(Grouping::RBrace)), 
-            |s| { s.parse_query_goal() }, 
-            Grouping::Comma,
-        );
-        items.locmap(|items| ASTQueryExpression::QExpression { items })
+    pub fn parse_plain_query_expression(&mut self, rhs: (Token, &'static str)) -> Parse<ASTQueryExpression> {
+        let mut delimit = DelimitedMany::braces_basis();
+        delimit.separator = Some(Token::Grouping(Grouping::Comma));
+
+        delimit.lhs = None;
+        delimit.rhs = rhs;
+        delimit.consume_rhs = false;
+
+        self.group(
+            delimit,
+            |s| s.parse_query_goal(),
+            |items| ASTQueryExpression::QExpression { items },
+            ASTQueryExpression::Invalid,
+        )
     }
 
     fn parse_query_goal(&mut self) -> Parse<ASTQueryGoal> {
@@ -28,30 +43,28 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_goal_source(&mut self) -> Parse<ASTQueryGoalSource> {
-        if self.ts.peek_keyword("in") {
-            let in_ = self.ts.pop_keyword("in").unwrap();
-            let tbl = if let Some(ident) = self.ts.pop_identifier() { ident } else {
-                return self.give_up("expected table after 'in'", ASTQueryGoalSource::Invalid);
-            };
-            in_.location().merge_l(&tbl).replace(ASTQueryGoalSource::In { from: tbl })
+        return self.located(|s| {
+            if s.ts.pop_keyword("in").is_some() {
+                let tbl = if let Some(ident) = s.ts.pop_identifier() { ident } else {
+                    return ASTQueryGoalSource::Invalid(kpe("expected table after 'in'"))
+                };
+                ASTQueryGoalSource::In { from: tbl }
 
-        } else if self.ts.peek_tpred(|t| t == &Token::Operator(Operator::OAssignNew)) {
-            let assign = self.ts.pop_any(); 
-            let expression = self.parse_expression();
-            assign.location().merge_l(&expression).replace(ASTQueryGoalSource::Assign { expression })
+            } else if s.ts.pop_eq(&Token::Operator(Operator::OAssignNew)).is_some() {
+                let expression = s.parse_expression();
+                ASTQueryGoalSource::Assign { expression }
 
-        } else if self.ts.peek_tpred(|t| t == &Token::Operator(Operator::OAssign)) {
-            let assign = self.ts.pop_any(); 
-            let expression = self.parse_expression();
-            assign.location().merge_l(&expression).replace(ASTQueryGoalSource::Invalid(kpe(
-                "you can't use = in a query expression, only :="
-            )))
+            } else if s.ts.pop_eq(&Token::Operator(Operator::OAssign)).is_some() {
+                s.parse_expression();
+                ASTQueryGoalSource::Invalid(kpe(
+                    "you can't use = in a query expression, only :="
+                ))
 
-        } else {
-            let garbage = self.ts.pop_any(); 
-            return garbage.replace(
+            } else {
+                s.ts.pop_any(); 
+                // TODO: Attempt to move all the way onto RHS delimiter
                 ASTQueryGoalSource::Invalid(kpe("unrecognized goal source: expected in or :="))
-            )
-        }
+            }
+        })
     }
 }

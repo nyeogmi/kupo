@@ -13,7 +13,7 @@ pub enum Token {
     Keyword(String), 
     Identifier(String), 
     Variable(String), 
-    // Integer(u64),
+    Integer(u64),
     // Float(f64),
     StringLiteral(String),
     Grouping(Grouping),
@@ -37,7 +37,7 @@ pub enum Operator {
 pub enum Invalid {
     Char(char),
     StringLiteral(usize, String),  // error position, error
-    // Integer(String),
+    Integer(String),
 }
 
 struct CStream<'a> {
@@ -108,7 +108,7 @@ struct Lexer<'a> {
     tokens: Vec<Located<Token>>,
 }
 
-pub fn lex(s: &str) -> Vec<Located<Token>> {
+pub fn lex(s: &str) -> (Vec<Located<Token>>, Located<()>) {
     let cs = CStream::new(s);
     let tokens = vec![];
 
@@ -116,19 +116,20 @@ pub fn lex(s: &str) -> Vec<Located<Token>> {
 }
 
 impl<'a> Lexer<'a> {
-    fn lex(mut self) -> Vec<Located<Token>> {
+    fn lex(mut self) -> (Vec<Located<Token>>, Located<()>) {
         while self.cs.any() {
             if self.whitespace() { continue; }
             if self.singleline_comment() { continue; }
             if self.identifier() { continue; }
+            if self.variable() { continue; }
             // if self.float() { continue; }
-            // if self.integer() { continue; }
+            if self.integer() { continue; }
             if self.dq_string_literal() { continue; }
             if self.sq_string_literal() { continue; }
             if self.grouping() { continue; }
             if self.operator() { continue; }
 
-            println!("wtf is this");
+            // println!("wtf is this");
             let start = self.cs.offset;
             if let Some(c) = self.cs.pop_any() {
                 let end = self.cs.offset;
@@ -136,7 +137,7 @@ impl<'a> Lexer<'a> {
             }
             // TODO: Add an invalid token
         }
-        return self.tokens
+        (self.tokens, Located { start: self.cs.offset, end: self.cs.offset, value: () })
     }
 
     fn whitespace(&mut self) -> bool {
@@ -197,7 +198,6 @@ impl<'a> Lexer<'a> {
     }
     */
 
-    /*
     fn integer(&mut self) -> bool {
         let start = self.cs.offset;
         lazy_static! {
@@ -222,19 +222,18 @@ impl<'a> Lexer<'a> {
                 };
 
             match expr {
-                Ok(int) => self.tokens.push(Located::At(start, end, Token::Integer(int))),
+                Ok(int) => self.tokens.push(Located { start, end, value: Token::Integer(int) } ),
                 Err(e) => {
                     // invalid integer (probably too big)
-                    self.tokens.push(Located::At(start, end, Token::Invalid(
+                    self.tokens.push(Located { start, end, value: Token::Invalid(
                         Invalid::Integer(format!("invalid integer: {} ({})", integer, e))
-                    )))
+                    )})
                 }
             }
             return true
         }
         return false
     }
-    */
 
     fn grouping(&mut self) -> bool {
         let start = self.cs.offset;

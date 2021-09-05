@@ -1,6 +1,6 @@
 use crate::frontend::{lexer::{Grouping, Token}, located::Located};
 
-use super::{Parse, Parser, internal_ast::KupoParseError};
+use super::{Parser, internal_ast::KupoParseError};
 
 
 // NYEO NOTE: Some of these are quite complicated!!!
@@ -41,10 +41,6 @@ impl<'a> Parser<'a> {
     pub fn skip_to_end_of_expression(&mut self) -> Located<()> {
         // TODO:
         self.ts.pop_any().replace(())
-    }
-
-    pub fn give_up<T>(&self, s: &str, f: impl FnOnce(KupoParseError) -> T) -> Parse<T> {
-        return self.ts.location().replace(f(kpe(s)))
     }
 }
 

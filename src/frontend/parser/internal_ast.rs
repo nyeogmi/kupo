@@ -1,31 +1,31 @@
 use super::super::located::Located;
 
-pub struct ASTModule {
-    pub items: Vec<Located<ASTItem>>,
+#[derive(Debug)]
+pub enum ASTModule {
+    Module { 
+        items: Vec<Located<ASTItem>>,
+    },
+    Invalid(KupoParseError),
 }
 
+#[derive(Debug)]
 pub enum ASTItem {
     Def(ASTDef),
     View(ASTView),
     Invalid(KupoParseError),
 }
 
+#[derive(Debug)]
 pub enum ASTDef {
     Def {
         name: Located<String>,
         args: Located<ASTArgs>,
+        return_type: Option<Located<ASTTypes>>,
         body: Located<ASTBlock>
     },
     Invalid(KupoParseError),
 }
-
-pub enum ASTArgs {
-    Args {
-        args: Vec<Located<ASTArg>>,
-    },
-    Invalid(KupoParseError),
-}
-
+#[derive(Debug)]
 pub enum ASTView {
     View {
         name: Located<String>,
@@ -35,14 +35,40 @@ pub enum ASTView {
     Invalid(KupoParseError),
 }
 
-pub enum ASTArg {
-    Arg {
-        name: Located<String>,
-        type_name: Option<Located<String>>,
+#[derive(Debug)]
+pub enum ASTArgs {
+    Args {
+        args: Vec<Located<ASTArg>>,
     },
     Invalid(KupoParseError),
 }
 
+
+#[derive(Debug)]
+pub enum ASTTypes {
+    Types {
+        types: Vec<Located<ASTType>>,
+    },
+    Invalid(KupoParseError),
+}
+
+
+#[derive(Debug)]
+pub enum ASTArg {
+    Arg {
+        name: Located<String>,
+        type_name: Option<Located<ASTType>>,
+    },
+    Invalid(KupoParseError),
+}
+
+#[derive(Debug)]
+pub enum ASTType {
+    Type { name: Located<String>, },
+    Invalid(KupoParseError),
+}
+
+#[derive(Debug)]
 pub enum ASTStatement {
     For { 
         arg: Located<ASTQueryExpression>, 
@@ -68,6 +94,7 @@ pub enum ASTStatement {
     // TODO: Return 
 }
 
+#[derive(Debug)]
 pub enum ASTBlock {
     Block {
         items: Vec<Located<ASTStatement>>
@@ -75,6 +102,7 @@ pub enum ASTBlock {
     Invalid(KupoParseError),
 }
 
+#[derive(Debug)]
 pub enum ASTQueryExpression {
     QExpression { 
         items: Vec<Located<ASTQueryGoal>>,
@@ -82,15 +110,16 @@ pub enum ASTQueryExpression {
     Invalid(KupoParseError),
 }
 
+#[derive(Debug)]
 pub enum ASTQueryGoal {
     // TODO: Parens?
     Goal { 
         args: Located<ASTAssignTarget>,
         source: Located<ASTQueryGoalSource>,
     },
-    Invalid(KupoParseError),
 }
 
+#[derive(Debug)]
 pub enum ASTAssignTarget {
     Target {
         args: Vec<Located<ASTExpression>>,
@@ -98,6 +127,7 @@ pub enum ASTAssignTarget {
     Invalid(KupoParseError)
 }
 
+#[derive(Debug)]
 pub enum ASTQueryGoalSource {
     In { from: Located<String>, },
     Assign { expression: Located<ASTExpression>, },
@@ -106,14 +136,36 @@ pub enum ASTQueryGoalSource {
     Invalid(KupoParseError),
 }
 
+#[derive(Debug)]
 pub enum ASTExpression {
-    StringLiteral { it: Located<String> },
+    StringLiteral { it: String },
+    IntegerLiteral { it: u64 },
     Call { 
         call: Located<ASTCall>,
+    },
+    UOp {
+        op: ASTUOp,
+        arg: Box<Located<ASTExpression>>
+    },
+    BinOp {
+        arg1: Box<Located<ASTExpression>>,
+        op: ASTBinOp,
+        arg2: Box<Located<ASTExpression>>,
     },
     Invalid(KupoParseError),
 }
 
+#[derive(Debug)]
+pub enum ASTUOp { 
+    Negate, Plus
+}
+
+#[derive(Debug)]
+pub enum ASTBinOp { 
+    Add, Subtract, Multiply, Divide
+}
+
+#[derive(Debug)]
 pub enum ASTCall {
     Call {
         name: Located<String>,
@@ -122,6 +174,7 @@ pub enum ASTCall {
     Invalid(KupoParseError),
 }
 
+#[derive(Debug)]
 pub enum ASTCallArgs {
     Args {
         args: Vec<Located<ASTExpression>>
@@ -129,8 +182,5 @@ pub enum ASTCallArgs {
     Invalid(KupoParseError),
 }
 
+#[derive(Debug)]
 pub struct KupoParseError(pub String);
-
-// NYEO NOTE: use this if the parse is so screwed up it can't even continue
-// in particular, if you can't even tell what the location of the problem is
-pub struct KupoParsePanic(pub String);
