@@ -1,7 +1,7 @@
 mod error_helpers;
 mod expression;
 mod grouping_helpers;
-mod internal_ast;
+pub mod internal_ast;
 mod precedence;
 mod query_expression;
 mod statement;
@@ -10,7 +10,7 @@ mod tstream;
 
 use tstream::*;
 
-pub use self::internal_ast::*;
+use self::internal_ast::ASTModule;
 
 use super::{lexer::{Token}, located::Located};
 

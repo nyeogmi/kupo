@@ -74,13 +74,12 @@ impl<'a> Parser<'a> {
                 if s.ts.peek_eq(&Token::EOF) { return fail(kpe("found EOF before end of group")); }
 
                 let x = parse(s);
-                println!("got {:?}", x);
                 xs.push(x);
 
                 if let Some(sep) = &rules.separator {
                     let found_terminator = s.ts.pop_eq(&sep).is_some();
                     if !found_terminator { 
-                        println!("breaking: did not find: {:?}", sep);
+                        // println!("breaking: did not find: {:?}", sep);
                         break; 
                     }
                 }
@@ -88,9 +87,9 @@ impl<'a> Parser<'a> {
 
             let (rhs, rmsg) = rules.rhs;
             if rules.consume_rhs {
-                println!("looking for: {:?}", rhs);
+                // println!("looking for: {:?}", rhs);
                 if s.ts.pop_eq(&rhs).is_none() {
-                    println!("did not find it");
+                    // println!("did not find it");
                     return fail(kpe(rmsg));
                 };
             } else {

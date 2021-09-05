@@ -1,13 +1,14 @@
+pub mod ast;
 mod keywords;
 mod located;
 mod lexer;
 mod parser;
 
-pub use parser::*;
+pub use self::located::Located;
+use self::parser::internal_ast::KupoParseError;
 
-use self::located::Located;
-
-pub fn parse_module(s: &str) -> Located<ASTModule> {
+pub fn parse_module(s: &str) -> Result<Located<ast::Module>, Vec<Located<KupoParseError>>> {
     let (ts, eof) = lexer::lex(s);
-    parser::parse_module(&ts, eof)
+    let internal_parse = parser::parse_module(&ts, eof);
+    ast::simplify_module(internal_parse)
 }

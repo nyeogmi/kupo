@@ -1,5 +1,6 @@
 use super::super::located::Located;
 
+// == structural ==
 #[derive(Debug)]
 pub enum ASTModule {
     Module { 
@@ -68,6 +69,15 @@ pub enum ASTType {
     Invalid(KupoParseError),
 }
 
+// == statement ==
+#[derive(Debug)]
+pub enum ASTBlock {
+    Block {
+        items: Vec<Located<ASTStatement>>
+    },
+    Invalid(KupoParseError),
+}
+
 #[derive(Debug)]
 pub enum ASTStatement {
     For { 
@@ -91,17 +101,10 @@ pub enum ASTStatement {
         arg: Located<ASTExpression>,
     },
     Invalid(KupoParseError),
-    // TODO: Return 
+    // TODO: continue/break 
 }
 
-#[derive(Debug)]
-pub enum ASTBlock {
-    Block {
-        items: Vec<Located<ASTStatement>>
-    },
-    Invalid(KupoParseError),
-}
-
+// == query expression ==
 #[derive(Debug)]
 pub enum ASTQueryExpression {
     QExpression { 
@@ -136,6 +139,7 @@ pub enum ASTQueryGoalSource {
     Invalid(KupoParseError),
 }
 
+// == expression ==
 #[derive(Debug)]
 pub enum ASTExpression {
     StringLiteral { it: String },
