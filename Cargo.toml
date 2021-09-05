@@ -13,3 +13,5 @@ edition = "2018"
 
 [dependencies]
 moogle = {version = "0.3"}
+regex = "1.5"
+lazy_static = "1.4.0"
