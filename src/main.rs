@@ -46,5 +46,14 @@ fn main() {
     main_old();
     println!("{:?}", parse_module("
     view [@x NPC] in lonely_vampire {}
+
+    def main() [] {
+        print('Test!')
+    }
+    "));
+    println!("{:?}", parse_module("
+    def main() {
+        print(1+2*3)
+    }
     "));
 }

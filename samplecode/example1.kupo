@@ -7,7 +7,7 @@ or {
     [@x, @y] in lonely_vampires_monthly
 }
 
-def main() {
+def main() NPC {
     @s := "Hello, world!"
     for [@x, @y] in lonely_vampire or [@x, @y] in friendly_bat { 
         print(@x)
