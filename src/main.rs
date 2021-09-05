@@ -57,7 +57,7 @@ fn main() {
     }
     "));
     println!("{:?}", parse_module("
-    def main() {
+    def main(@x) {
         print(1+2*3
     }
     "));
