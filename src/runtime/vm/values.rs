@@ -1,6 +1,7 @@
 use std::slice;
 
-use crate::runtime::{MutToUnknown, RefToUnknown, Struct};
+use crate::codegen::Struct;
+use crate::runtime::{MutToUnknown, RefToUnknown};
 
 pub struct UntaggedValue {
     pub data: Box<[u8]>

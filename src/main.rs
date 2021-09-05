@@ -1,22 +1,24 @@
 #![feature(type_alias_impl_trait)]
 
+mod codegen;
 mod runtime;
 mod frontend;
 
 use std::fmt::Debug;
 
-use crate::runtime::{Bytecode, Instruction, Procedure, Register, TypeData, UntaggedValue, VM};
+use crate::codegen::*;
+use crate::runtime::{UntaggedValue, VM};
 use crate::frontend::parse_module;
 
 fn main_old() {
-    let mut args = runtime::StructBuilder::new();
+    let mut args = codegen::StructBuilder::new();
     args.push("a1".to_string(), TypeData::new_copy::<&'static str>(
         |ptr, dbg| ptr.cast::<&'static str>().get().fmt(dbg).unwrap(),
     ));
     let args = args.build();
-    let locals = runtime::StructBuilder::new().build();
+    let locals = codegen::StructBuilder::new().build();
 
-    let program = runtime::Program {
+    let program = codegen::Program {
         procedures: vec![
             Procedure{
                 args, locals,

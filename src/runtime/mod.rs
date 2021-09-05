@@ -1,7 +1,5 @@
-mod code;
-mod dynamism;
+pub(crate) mod dynamism;
 mod vm;
 
-pub use code::*;
 pub use dynamism::*;
 pub use vm::*;

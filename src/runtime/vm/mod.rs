@@ -1,10 +1,10 @@
 mod values;
 
-use crate::runtime::Program;
+use crate::codegen::{Instruction, Procedure, Program, Register};
 
 pub use self::values::UntaggedValue;
 
-use super::{MutToUnknown, Procedure, RefToUnknown, Register};
+use super::{MutToUnknown, RefToUnknown};
 
 pub struct VM {
     program: Program
@@ -32,11 +32,11 @@ impl VM {
 
         while frame.ip < proc.code.instructions.len() {
             match proc.code.instructions[frame.ip] {
-                super::Instruction::RustCallMut { rust_fn, arg, out } => {
+                Instruction::RustCallMut { rust_fn, arg, out } => {
                     let (rr, mr) = frame.mut_register2(proc, arg, out);
                     (self.program.ffi_mut[rust_fn])(rr.downgrade(), mr)
                 }
-                super::Instruction::RustCallRef { rust_fn, arg } => {
+                Instruction::RustCallRef { rust_fn, arg } => {
                     (self.program.ffi_ref[rust_fn])(frame.ref_register(proc, arg))
                 }
             }
