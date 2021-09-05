@@ -265,7 +265,7 @@ impl<'a> Lexer<'a> {
         else if self.cs.pop_string("/") { op = Operator::ODivide; }
         else if self.cs.pop_string(".") { op = Operator::ODot; }
         else if self.cs.pop_string(":=") { op = Operator::OAssignNew; }
-        // else if self.cs.pop_string("=") { op = Operator::OAssign; }
+        else if self.cs.pop_string("=") { op = Operator::OAssign; }
         else { return false; }
 
         let end = self.cs.offset;
