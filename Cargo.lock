@@ -34,9 +34,9 @@ checksum = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a"
 
 [[package]]
 name = "moogle"
-version = "0.3.1"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0599fadd3d7490d244813597bb989892f9b46f5ffd6f8f46e2e7066c1cc32481"
+checksum = "d21ff1cad2480f364f142dcb95e6627287c3096039a457388c41e9e3018ce599"
 
 [[package]]
 name = "regex"
