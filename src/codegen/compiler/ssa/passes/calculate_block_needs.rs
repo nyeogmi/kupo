@@ -13,7 +13,7 @@ pub(crate) struct BlockNeeds {
 
 impl SSA {
     pub(in crate::codegen::compiler::ssa) 
-    fn block_needs(&self, cfg: &ControlFlowGraph) -> BlockNeeds {
+    fn calculate_block_needs(&self, cfg: &ControlFlowGraph) -> BlockNeeds {
         // == Calculate total needs of all blocks ==
         let mut block_needs_queue = VecDeque::new();
         let mut block_needs = RawToMany::new();

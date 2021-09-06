@@ -31,7 +31,7 @@ impl SSA {
         // == Calculate block jump table ==
         let mut block_jumps_to = RawManyToMany::new();
         for (block, data) in self.blocks.iter() {
-            data.instructions[data.instructions.len() - 1].for_jumped_labels(|block2| {
+            data.instructions[data.instructions.len() - 1].for_label(|block2| {
                 block_jumps_to.mut_fwd().insert(block, *block2);
             })
         }

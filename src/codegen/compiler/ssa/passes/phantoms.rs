@@ -7,7 +7,8 @@ use crate::codegen::{GenInstruction, compiler::ssa::SSA};
 use super::{BlockNeeds, ControlFlowGraph};
 
 impl SSA {
-    pub(in crate::codegen::compiler::ssa) fn generate_phantoms(&mut self, cfg: &ControlFlowGraph, needs: &BlockNeeds) {
+    pub(in crate::codegen::compiler::ssa) 
+    fn generate_phantoms(&mut self, cfg: &ControlFlowGraph, needs: &BlockNeeds) {
         // == Generate phantom blocks if needed ==
         // (Sometimes we don't actually need a phantom block because the variables propagated down are identical.)
         // (In that case, uh, we'll take them out later. That might be a TODO. We'll see!)
@@ -21,7 +22,7 @@ impl SSA {
                 // -- generate sites for needs --
                 let mut need_registers = HashMap::new();
                 for need in target_needs.iter() {
-                    let need_register = self.create_register();
+                    let need_register = self.create_register(Some(need));
                     need_registers.insert(need, need_register);
                 }
 

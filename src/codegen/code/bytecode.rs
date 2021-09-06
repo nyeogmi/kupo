@@ -27,10 +27,19 @@ impl<Write: PartialEq<Write>, Read: PartialEq<Read>, Label: PartialEq<Label>> Ge
         true
     }
 
-    pub fn for_populated_registers(&self, f: impl FnMut(&Write)) {
+    pub fn for_copy(&self, f: impl FnMut(&Write, &Read)) {
+        todo!();
     }
 
-    pub fn for_jumped_labels(&self, mut f: impl FnMut(&Label)) {
+    pub fn for_write(&self, f: impl FnMut(&Write)) {
+        todo!()
+    }
+
+    pub fn for_read(&self, f: impl FnMut(&Read)) {
+        todo!()
+    }
+
+    pub fn for_label(&self, mut f: impl FnMut(&Label)) {
         match self {
             GenInstruction::Move { out, arg } => {}
             GenInstruction::RustCallMut { .. } => {}

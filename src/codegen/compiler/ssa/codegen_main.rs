@@ -12,7 +12,7 @@ impl SSA {
         self.generate_final_block(&cfg);
 
         let cfg = self.analyze_cfg();
-        let needs = self.block_needs(&cfg);
+        let needs = self.calculate_block_needs(&cfg);
         self.generate_phantoms(&cfg, &needs);
         let cfg = self.analyze_cfg();
 

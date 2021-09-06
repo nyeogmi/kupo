@@ -10,6 +10,7 @@ mod types;
 pub struct SSA {
     blocks: RawPom<SSABlock>,
     registers: RawPom<SSAReg>,
+    variable_registers: RawManyToMany<Id<Var>, Id<SSAReg>>
 }
 
 impl SSA {
@@ -22,8 +23,12 @@ impl SSA {
         })
     }
 
-    pub fn create_register(&mut self) -> Id<SSAReg> {
-        self.registers.insert(SSAReg)
+    pub fn create_register(&mut self, associated_variable: Option<Id<Var>>) -> Id<SSAReg> {
+        let id = self.registers.insert(SSAReg);
+        if let Some(var) = associated_variable {
+            self.variable_registers.mut_fwd().insert(var, id);
+        }
+        id
     }
 
     pub fn read_variable(&mut self, block: Id<SSABlock>, variable: Id<Var>) -> ArgRegister {
@@ -47,7 +52,7 @@ impl SSA {
             panic!("can't write variable in complete block");
         }
 
-        let reg = self.create_register();
+        let reg = self.create_register(Some(variable));
         self.write_variable_reg(block, variable, reg)
     }
 
@@ -58,6 +63,7 @@ impl SSA {
         }
 
         data.populates.mut_fwd().insert(variable, register);
+        self.variable_registers.mut_fwd().insert(variable, register);
         register
     }
 
