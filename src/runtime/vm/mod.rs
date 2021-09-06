@@ -1,6 +1,6 @@
 mod values;
 
-use crate::codegen::{Instruction, Procedure, Program, Register};
+use crate::codegen::{GenInstruction, Instruction, Procedure, Program, Register};
 
 pub use self::values::UntaggedValue;
 
@@ -32,13 +32,18 @@ impl VM {
 
         while frame.ip < proc.code.instructions.len() {
             match proc.code.instructions[frame.ip] {
-                Instruction::RustCallMut { rust_fn, arg, out } => {
+                GenInstruction::RustCallMut { rust_fn, arg, out } => {
                     let (rr, mr) = frame.mut_register2(proc, arg, out);
                     (self.program.ffi_mut[rust_fn])(rr.downgrade(), mr)
                 }
-                Instruction::RustCallRef { rust_fn, arg } => {
+                GenInstruction::RustCallRef { rust_fn, arg } => {
                     (self.program.ffi_ref[rust_fn])(frame.ref_register(proc, arg))
                 }
+                GenInstruction::Jump { label } => {
+                    frame.ip = label
+                }
+                GenInstruction::Move { out, arg } => todo!(),
+                GenInstruction::Return {  } => todo!(),
             }
             frame.ip += 1;
         }

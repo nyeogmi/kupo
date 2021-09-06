@@ -1,7 +1,7 @@
 mod bytecode;
 mod structure;
 
-pub use bytecode::{Bytecode, Instruction, Register};
+pub use bytecode::{Bytecode, GenInstruction, Instruction, Register};
 pub use structure::{Struct, StructBuilder, TypeData};
 
 use crate::runtime::{dynamism::{MutToUnknown, RefToUnknown}};

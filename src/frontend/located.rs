@@ -6,6 +6,10 @@ pub struct Located<T> {
 }
 
 impl<T> Located<T> {
+    pub fn split(self) -> (Located<()>, T) {
+        (self.location(), self.value)
+    }
+
     pub fn locmap<X>(self, f: impl Fn(T) -> X) -> Located<X> {
         Located {
             value: f(self.value), start: self.start, end: self.end

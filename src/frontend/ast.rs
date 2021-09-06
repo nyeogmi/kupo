@@ -19,34 +19,34 @@ pub enum Item {
 
 #[derive(Debug)]
 pub struct Def {
-    name: Located<String>,
-    args: Vec<Located<Arg>>,
-    return_type: Option<Vec<Located<Type>>>,
-    body: Located<Block>,
+    pub name: Located<String>,
+    pub args: Vec<Located<Arg>>,
+    pub return_type: Option<Vec<Located<Type>>>,
+    pub body: Located<Block>,
 }
 
 #[derive(Debug)]
 pub struct View {
-    name: Located<String>,
-    args: Vec<Located<Arg>>,
-    clauses: Vec<Located<QueryExpression>>
+    pub name: Located<String>,
+    pub args: Vec<Located<Arg>>,
+    pub clauses: Vec<Located<QueryExpression>>
 }
 
 #[derive(Debug)]
 pub struct Arg {
-    name: Located<String>,
-    type_name: Option<Located<Type>>,
+    pub name: Located<String>,
+    pub type_name: Option<Located<Type>>,
 }
 
 #[derive(Debug)]
 pub struct Type {
-    name: Located<String>,
+    pub name: Located<String>,
 }
 
 // == statement ==
 #[derive(Debug)]
 pub struct Block {
-    items: Vec<Located<Statement>>,
+    pub items: Vec<Located<Statement>>,
 }
 
 #[derive(Debug)]
@@ -76,13 +76,13 @@ pub enum Statement {
 
 #[derive(Debug)]
 pub struct AssignTarget {
-    args: Vec<Located<Expression>>,
+    pub args: Vec<Located<Expression>>,
 }
 
 // == query expression ==
 #[derive(Debug)]
 pub struct QueryExpression {
-    items: Vec<Located<QueryGoal>>
+    pub items: Vec<Located<QueryGoal>>
 }
 
 #[derive(Debug)]
@@ -124,8 +124,8 @@ pub enum BinOp { Add, Subtract, Multiply, Divide }
 
 #[derive(Debug)]
 pub struct Call {
-    name: Located<String>,
-    args: Vec<Located<Expression>>,
+    pub name: Located<String>,
+    pub args: Vec<Located<Expression>>,
 }
 
 // == convert internal to external ast ==
