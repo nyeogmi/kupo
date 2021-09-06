@@ -1,5 +1,3 @@
-use std::{collections::{HashMap, VecDeque}};
-
 use moogle::*;
 use crate::codegen::Instruction as VMInstruction;
 

@@ -91,7 +91,7 @@ impl KStructBuilder {
         }
     }
 
-    pub fn build(mut self, types: &mut KTypes) -> Id<KStruct> {
+    pub fn build(self, types: &mut KTypes) -> Id<KStruct> {
         types.structs.insert(KStruct { 
             fields: self.fields, 
             single_fields: self.single_fields, 

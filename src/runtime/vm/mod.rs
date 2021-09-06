@@ -1,5 +1,7 @@
 mod values;
 
+use moogle::Id;
+
 use crate::codegen::{GenInstruction, KTypes, Procedure, Program, Register};
 
 pub use self::values::UntaggedValue;
@@ -16,8 +18,8 @@ impl VM {
         VM {program, types}
     }
 
-    pub fn call(&self, procedure: usize, args: UntaggedValue) {
-        let proc = &self.program.procedures[procedure];
+    pub fn call(&self, procedure: Id<Procedure>, args: UntaggedValue) {
+        let proc = &self.program.procedures.get(procedure).unwrap();
         let mut frame = Frame { 
             procedure, 
             ip: 0,
@@ -29,7 +31,7 @@ impl VM {
     }
 
     fn interpret(&self, frame: &mut Frame) -> () {
-        let proc = &self.program.procedures[frame.procedure];
+        let proc = &self.program.procedures.get(frame.procedure).unwrap();
 
         while frame.ip < proc.code.instructions.len() {
             match proc.code.instructions[frame.ip] {
@@ -52,7 +54,7 @@ impl VM {
 }
 
 pub struct Frame {
-    procedure: usize,
+    procedure: Id<Procedure>,
     ip: usize,
     args: UntaggedValue,
     locals: UntaggedValue,

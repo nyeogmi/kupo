@@ -14,6 +14,16 @@ pub struct SSA {
 }
 
 impl SSA {
+    pub fn new() -> SSA {
+        let mut ssa = SSA { 
+            blocks: RawPom::new(),
+            registers: RawPom::new(),
+            variable_registers: RawManyToMany::new(),
+        };
+        ssa.create_block();  // first block needs to exist before user gets a hold of it!
+        ssa
+    }
+
     pub fn create_block(&mut self) -> Id<SSABlock> {
         self.blocks.insert(SSABlock {
             complete: false,

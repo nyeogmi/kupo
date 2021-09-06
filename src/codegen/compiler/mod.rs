@@ -1,2 +1,5 @@
+
+mod e2e;
 mod ssa;
-// mod view;
+
+pub use e2e::compile;

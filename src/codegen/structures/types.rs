@@ -75,7 +75,7 @@ impl KTypes {
         struct_id
     }
 
-    pub(super) fn typedata_for_ref_to(&self, ref_to: &KStruct) -> KSingle {
+    pub(crate) fn typedata_for_ref_to(&self, ref_to: &KStruct) -> KSingle {
         // TODO: Separate for ref_mut
         KSingle { 
             type_id: None,

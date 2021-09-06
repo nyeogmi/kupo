@@ -13,8 +13,7 @@ pub enum GenInstruction<Write, Read, Label> {
     Move { out: Write, arg: Read },
 
     // FFI to Rust
-    RustCallMut { rust_fn: usize, out: Write, arg: Read },
-    RustCallRef { rust_fn: usize, arg: Read},
+    RustCall { rust_fn: usize, args: Write },
 
     Jump { label: Label },
     Return {},

@@ -8,7 +8,7 @@ use super::parser::internal_ast::{self, KupoParseError};
 // == structural ==
 #[derive(Debug)]
 pub struct Module {
-    items: Vec<Located<Item>>
+    pub items: Vec<Located<Item>>
 }
 
 #[derive(Debug)]
