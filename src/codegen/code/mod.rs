@@ -1,10 +1,11 @@
 mod bytecode;
-mod structure;
+use moogle::Id;
 
 pub use bytecode::{Bytecode, GenInstruction, Instruction, Register};
-pub use structure::{Struct, StructBuilder, TypeData};
 
 use crate::runtime::{dynamism::{MutToUnknown, RefToUnknown}};
+
+use super::KStruct;
 
 pub struct Program {
     pub(crate) procedures: Vec<Procedure>,
@@ -13,7 +14,7 @@ pub struct Program {
 }
 
 pub struct Procedure {
-    pub(crate) args: Struct,
-    pub(crate) locals: Struct,
+    pub(crate) args: Id<KStruct>,
+    pub(crate) locals: Id<KStruct>,
     pub(crate) code: Bytecode,
 }

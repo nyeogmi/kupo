@@ -11,12 +11,17 @@ use crate::runtime::{UntaggedValue, VM};
 use crate::frontend::parse_module;
 
 fn main_old() {
-    let mut args = codegen::StructBuilder::new();
-    args.push("a1".to_string(), TypeData::new_copy::<&'static str>(
-        |ptr, dbg| ptr.cast::<&'static str>().get().fmt(dbg).unwrap(),
-    ));
-    let args = args.build();
-    let locals = codegen::StructBuilder::new().build();
+    let mut types = KTypes::new();
+    let string = types.single_copy::<&'static str>(
+        |ptr, dbg| 
+        ptr.cast::<&'static str>().get().fmt(dbg).unwrap(),
+    );
+
+    let mut args = KStructBuilder::new();
+    args.push(&mut types, "a1".to_string(), KType::InPlace(string));
+    let args = args.build(&mut types);
+
+    let locals = KStructBuilder::new().build(&mut types);
 
     let program = codegen::Program {
         procedures: vec![
@@ -36,11 +41,14 @@ fn main_old() {
         ffi_mut: vec![],
     };
 
-    let args = &program.procedures[0].args;
-    let mut untagged = UntaggedValue::instantiate(args);
-    untagged.mut_field(args,0).cast::<&'static str>().initialize("Hello, world!");
+    let args = program.procedures[0].args;
+    let mut untagged = UntaggedValue::instantiate(&types, args);
+    untagged.mut_single_field(
+        types.get_structure(args), 
+        0
+    ).cast::<&'static str>().initialize("Hello, world!");
 
-    let vm = VM::new(program);
+    let vm = VM::new(program, types);
     vm.call(0, untagged);
 }
 

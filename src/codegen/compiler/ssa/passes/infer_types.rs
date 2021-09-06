@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use moogle::*;
 use moogle::methods::*;
 
 use disjoint_sets::UnionFind;
 
-use crate::codegen::compiler::ssa::{SSA, types::{ArgRegister, SSAReg}};
+use crate::codegen::{compiler::ssa::{SSA, types::{ArgRegister, SSAReg}}, structures::KType};
 
 impl SSA {
     pub(in crate::codegen::compiler::ssa) 
@@ -64,7 +66,7 @@ impl SSA {
 }
 
 struct TypeAssertions {
-    assertions: Vec<Type>
+    assertions: Vec<KType>
 }
 
 // will work on all platforms for any function with less than 2**32-1 registers

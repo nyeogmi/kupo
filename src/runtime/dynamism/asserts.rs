@@ -33,12 +33,18 @@ impl<'a> MutToUnknown<'a> {
         s
     }
 
-    pub(crate) fn initialize_asserts(&mut self, type_id: TypeId) {
+    pub(crate) fn initialize_asserts(&mut self, type_id: Option<TypeId>) {
         let s: &mut [u8] = self.0;
         let s: &mut InPlace<()> = unsafe { transmute(&mut s[0]) };
         // println!("initializing at {:?} ({:?})", s as *mut InPlace<()>, (&s.initialized as *const bool));
         s.initialized = false;
-        s.type_id = type_id;
+        if let Some(tid) = type_id {
+            s.type_id = tid;
+        } else {
+            // make all type asserts fail
+            struct Crap {}
+            s.type_id = TypeId::of::<Crap>();
+        }
     }
 
     pub(crate) fn downgrade(self) -> RefToUnknown<'a> {

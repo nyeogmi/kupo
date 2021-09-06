@@ -1,18 +1,19 @@
 mod values;
 
-use crate::codegen::{GenInstruction, Instruction, Procedure, Program, Register};
+use crate::codegen::{GenInstruction, KTypes, Procedure, Program, Register};
 
 pub use self::values::UntaggedValue;
 
 use super::{MutToUnknown, RefToUnknown};
 
 pub struct VM {
-    program: Program
+    program: Program,
+    types: KTypes,
 }
 
 impl VM {
-    pub fn new(program: Program) -> VM {
-        VM {program}
+    pub fn new(program: Program, types: KTypes) -> VM {
+        VM {program, types}
     }
 
     pub fn call(&self, procedure: usize, args: UntaggedValue) {
@@ -21,7 +22,7 @@ impl VM {
             procedure, 
             ip: 0,
             args, 
-            locals: UntaggedValue::instantiate(&proc.locals) ,
+            locals: UntaggedValue::instantiate(&self.types, proc.locals) ,
         };
         // interpret(proc.code
         self.interpret(&mut frame);
@@ -33,11 +34,11 @@ impl VM {
         while frame.ip < proc.code.instructions.len() {
             match proc.code.instructions[frame.ip] {
                 GenInstruction::RustCallMut { rust_fn, arg, out } => {
-                    let (rr, mr) = frame.mut_register2(proc, arg, out);
+                    let (rr, mr) = frame.mut_register2(&self.types, proc, arg, out);
                     (self.program.ffi_mut[rust_fn])(rr.downgrade(), mr)
                 }
                 GenInstruction::RustCallRef { rust_fn, arg } => {
-                    (self.program.ffi_ref[rust_fn])(frame.ref_register(proc, arg))
+                    (self.program.ffi_ref[rust_fn])(frame.ref_register(&self.types, proc, arg))
                 }
                 GenInstruction::Jump { label } => {
                     frame.ip = label
@@ -58,25 +59,37 @@ pub struct Frame {
 }
 
 impl Frame {
-    fn ref_register<'a>(&'a self, proc: &'a Procedure, reg: Register) -> RefToUnknown<'a> {
+    fn ref_register<'a>(&'a self, types: &KTypes, proc: &'a Procedure, reg: Register) -> RefToUnknown<'a> {
         match reg {
-            Register::Arg(a) => { self.args.ref_field(&proc.args, a) }
-            Register::Local(l) => { self.locals.ref_field(&proc.locals, l) }
+            Register::Arg(a) => { 
+                let args = types.get_structure(proc.args);
+                self.args.ref_single_field(&args, a) 
+            }
+            Register::Local(l) => { 
+                let locals = types.get_structure(proc.locals);
+                self.locals.ref_single_field(&locals, l) 
+            }
         }
     }
 
-    fn mut_register<'a>(&'a mut self, proc: &'a Procedure, reg: Register) -> MutToUnknown<'a> {
+    fn mut_register<'a>(&'a mut self, types: &KTypes, proc: &'a Procedure, reg: Register) -> MutToUnknown<'a> {
         match reg {
-            Register::Arg(a) => { self.args.mut_field(&proc.args, a) }
-            Register::Local(l) => { self.locals.mut_field(&proc.locals, l) }
+            Register::Arg(a) => { 
+                let args = types.get_structure(proc.args);
+                self.args.mut_single_field(&args, a) 
+            }
+            Register::Local(l) => { 
+                let locals = types.get_structure(proc.locals);
+                self.locals.mut_single_field(&locals, l) 
+            }
         }
     }
 
-    fn mut_register2<'a>(&'a mut self, proc: &'a Procedure, m1: Register, m2: Register) -> (MutToUnknown<'a>, MutToUnknown<'a>) {
+    fn mut_register2<'a>(&'a mut self, types: &KTypes, proc: &'a Procedure, m1: Register, m2: Register) -> (MutToUnknown<'a>, MutToUnknown<'a>) {
         assert_ne!(m1, m2);
         let ptr = {self as *mut Self};
-        let m1_part = unsafe{&mut *ptr}.mut_register(proc, m1);
-        let m2_part = unsafe{&mut *ptr}.mut_register(proc, m2);
+        let m1_part = unsafe{&mut *ptr}.mut_register(types, proc, m1);
+        let m2_part = unsafe{&mut *ptr}.mut_register(types, proc, m2);
         (m1_part, m2_part)
     }
 }

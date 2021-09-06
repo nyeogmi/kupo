@@ -1,6 +1,8 @@
 use std::slice;
 
-use crate::codegen::Struct;
+use moogle::Id;
+
+use crate::codegen::{KStruct, KTypes};
 use crate::runtime::{MutToUnknown, RefToUnknown};
 
 pub struct UntaggedValue {
@@ -8,7 +10,8 @@ pub struct UntaggedValue {
 }
 
 impl UntaggedValue {
-    pub(crate) fn instantiate(structure: &Struct) -> Self {
+    pub(crate) fn instantiate(types: &KTypes, structure_id: Id<KStruct>) -> Self {
+        let structure = types.get_structure(structure_id);
         let ptr = unsafe { std::alloc::alloc(structure.overall_layout) };
         let len = structure.overall_layout.size();
         let data = unsafe { Box::from_raw(slice::from_raw_parts_mut(ptr, len)) };
@@ -17,9 +20,10 @@ impl UntaggedValue {
 
         // NYEO NOTE: This is a safety thing to enable asserts to work
         // It could be dropped for the no-asserts version
-        for i in 0..structure.fields.len() {
+        for i in 0..structure.single_fields.len() {
             // println!("initializing: {}", i);
-            value.mut_field(structure, i).initialize_asserts(structure.fields[i].type_data.rust_type)
+
+            value.mut_single_field(structure, i).initialize_asserts(structure.single_fields[i].type_data.type_id)
         }
 
         value
@@ -27,15 +31,15 @@ impl UntaggedValue {
 }
 
 impl UntaggedValue {
-    pub(crate) fn ref_field(&self, structure: &Struct, field: usize) -> RefToUnknown<'_> {
-        let field = &structure.fields[field];
+    pub(crate) fn ref_single_field(&self, structure: &KStruct, single_field: usize) -> RefToUnknown<'_> {
+        let field = &structure.single_fields[single_field];
         let offset = field.offset;
         let len = field.type_data.layout.size();
         RefToUnknown::from(&self.data[offset..offset + len])
     }
 
-    pub(crate) fn mut_field(&mut self, structure: &Struct, field: usize) -> MutToUnknown<'_> {
-        let field = &structure.fields[field];
+    pub(crate) fn mut_single_field(&mut self, structure: &KStruct, single_field: usize) -> MutToUnknown<'_> {
+        let field = &structure.single_fields[single_field];
         let offset = field.offset;
         let len = field.type_data.layout.size();
         MutToUnknown::from(&mut self.data[offset..offset + len])
