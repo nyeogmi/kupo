@@ -35,7 +35,7 @@ impl SSA {
                         let read = self.read_variable(phantom, need);
                         let write = need_registers[&need];
                         self.write_variable_reg(phantom, need, write);
-                        self.add_instruction(phantom, GenInstruction::Move { out: write, arg: read });
+                        self.add_instruction(phantom, GenInstruction::Copy { out: write, arg: read });
                     }
 
                     // -- make substitutions in target in advance --

@@ -14,7 +14,9 @@ pub enum Register {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum GenInstruction<Write, Read, Label> {
-    Move { out: Write, arg: Read },
+    Copy { out: Write, arg: Read },
+    CopyField { field_out: usize, out: Write, field_arg: usize, arg: Read },
+    MakeRef { field_out: usize, out: Write, arg: Read },
 
     // FFI to Rust
     RustCall { rust_fn: Id<RustFn>, out: Write, arg: Read },  // note: arg and out are required to be the same
@@ -27,11 +29,11 @@ pub type Instruction = GenInstruction<Register, Register, usize>;
 
 impl<Write: PartialEq<Write>, Read: PartialEq<Read>, Label: PartialEq<Label>> GenInstruction<Write, Read, Label> {
     pub fn is_jump(&self) -> bool {
-        true
+        todo!()
     }
 
     pub fn for_copy(&self, f: impl FnMut(&Write, &Read)) {
-        todo!();
+        todo!()
     }
 
     pub fn for_write(&self, f: impl FnMut(&Write)) {
@@ -43,12 +45,15 @@ impl<Write: PartialEq<Write>, Read: PartialEq<Read>, Label: PartialEq<Label>> Ge
     }
 
     pub fn for_label(&self, mut f: impl FnMut(&Label)) {
+        /*
         match self {
-            GenInstruction::Move { out, arg } => {}
+            GenInstruction::Copy { .. } => {}
             GenInstruction::RustCall { .. } => {}
             GenInstruction::Jump { label } => { f(label); }
             GenInstruction::Return {  } => {}
         }
+        */
+        todo!()
     }
 
     pub fn map_write<Write2>(self, f: impl Fn(Write) -> Write2) -> GenInstruction<Write2, Read, Label> {

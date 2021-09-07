@@ -77,9 +77,12 @@ impl KTypes {
 
     pub(crate) fn typedata_for_ref_to(&self, ref_to: &KStruct) -> KSingle {
         // TODO: Separate for ref_mut
+        let mut layout = Layout::new::<InPlaceCell<&u8>>();
+        layout = layout.pad_to_align();
+
         KSingle { 
             type_id: None,
-            layout: Layout::new::<&u8>(), 
+            layout,
             clone_callback: None, 
             debug_callback: debug_ptr,  // TODO: Base it on the passed struct?
             drop_callback: None 

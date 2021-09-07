@@ -4,21 +4,25 @@ use moogle::Id;
 
 use super::{KSingle, KType, KTypes};
 
+#[derive(Debug)]
 pub struct KStruct {
     pub fields: Vec<KField>,
     pub single_fields: Vec<KSingleField>,
     pub overall_layout: Layout,
 }
 
+#[derive(Debug)]
 pub struct KStructBuilder {
     pub fields: Vec<KField>,
     pub single_fields: Vec<KSingleField>,
     pub overall_layout: Layout,
 }
 
+#[derive(Debug)]
 pub struct KField {
     pub name: String,
     pub offset: usize,
+    pub size: usize,
     pub practical_type: KType,
 }
 
@@ -40,6 +44,13 @@ impl KStruct {
             overall_layout: layout
         }
     }
+
+    pub(crate) fn is_copy(&self) -> bool { // TODO: Store this
+        for sf in self.single_fields.iter() {
+            if !sf.type_data.is_copy() { return false; }
+        }
+        true
+    }
 }
 
 impl KStructBuilder {
@@ -57,6 +68,7 @@ impl KStructBuilder {
             KType::OutPtr(t) => {
                 let real_struct = types.structs.get(t).unwrap();
                 let typedata = types.typedata_for_ref_to(real_struct);
+                let size = typedata.layout.size();
                 let (new_overall_layout, offset) = 
                     self.overall_layout.extend(typedata.layout).unwrap();
 
@@ -64,7 +76,7 @@ impl KStructBuilder {
                     offset: offset,
                     type_data: typedata,
                 });
-                self.fields.push(KField { name, offset, practical_type: ty });
+                self.fields.push(KField { name, offset, size, practical_type: ty });
                 self.overall_layout = new_overall_layout;
             }
             KType::InPlace(t) => {
@@ -82,6 +94,7 @@ impl KStructBuilder {
                 self.fields.push(KField { 
                     name, 
                     offset, 
+                    size: real_struct.overall_layout.size(),
                     practical_type: KType::InPlace(t)
                 });
 
@@ -91,10 +104,11 @@ impl KStructBuilder {
     }
 
     pub fn build(self, types: &mut KTypes) -> Id<KStruct> {
+        let overall_layout = self.overall_layout.pad_to_align();
         types.structs.insert(KStruct { 
             fields: self.fields, 
             single_fields: self.single_fields, 
-            overall_layout: self.overall_layout 
+            overall_layout
         })
     }
 }

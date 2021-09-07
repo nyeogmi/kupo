@@ -3,4 +3,4 @@ mod compiler;
 mod structures;
 
 pub use code::*;
-pub use structures::{KType, KTypes, KStruct, KStructBuilder};
+pub use structures::{KField, KType, KTypes, KStruct, KStructBuilder};

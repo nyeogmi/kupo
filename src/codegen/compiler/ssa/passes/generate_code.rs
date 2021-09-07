@@ -12,7 +12,7 @@ use crate::codegen::code::Instruction as VMInstruction;
 
 impl SSA {
     pub(in crate::codegen::compiler::ssa) 
-    fn generate_code(mut self, cfg: &ControlFlowGraph) -> Vec<VMInstruction> {
+    fn generate_code(self, cfg: &ControlFlowGraph) -> Vec<VMInstruction> {
         let mut block_addresses: HashMap<Id<SSABlock>, usize> = HashMap::new();
         let mut code = vec![];
 
