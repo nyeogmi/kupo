@@ -1,14 +1,14 @@
 use std::{alloc::Layout, any::TypeId, fmt};
 
-use crate::{runtime::{MutToUnknown, RefToUnknown}};
+use crate::{runtime::{RefToUnknown}};
 
 #[derive(Clone)]
 pub struct KSingle {
     pub type_id: Option<TypeId>,  // not used for refs to structs generated at runtime
     pub layout: Layout,
-    pub clone_callback: Option<fn(RefToUnknown<'_>, MutToUnknown<'_>)>,
+    pub clone_callback: Option<fn(RefToUnknown<'_>, RefToUnknown<'_>)>,
     pub debug_callback: fn(RefToUnknown<'_>, &mut fmt::Formatter<'_>),
-    pub drop_callback: Option<fn(MutToUnknown<'_>)>,
+    pub drop_callback: Option<fn(RefToUnknown<'_>)>,
 
 }
 impl std::fmt::Debug for KSingle {

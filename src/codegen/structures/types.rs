@@ -1,4 +1,4 @@
-use std::{alloc::Layout, any::{Any, TypeId}, collections::HashMap, fmt::{self, Formatter}};
+use std::{alloc::Layout, any::{Any, TypeId}, cell::Cell, collections::HashMap, fmt::{self, Formatter}};
 
 use crate::runtime::dynamism::*;
 use moogle::*;
@@ -43,9 +43,9 @@ impl KTypes {
 
     pub fn single_clone<T: Any>(
         &mut self,
-        clone_callback: fn(RefToUnknown<'_>, MutToUnknown<'_>),
+        clone_callback: fn(RefToUnknown<'_>, RefToUnknown<'_>),
         debug_callback: fn(RefToUnknown<'_>, &mut fmt::Formatter<'_>),
-        drop_callback: Option<fn(MutToUnknown<'_>)>,
+        drop_callback: Option<fn(RefToUnknown<'_>)>,
     ) -> Id<KStruct> {
         let rust_type = TypeId::of::<T>();
 

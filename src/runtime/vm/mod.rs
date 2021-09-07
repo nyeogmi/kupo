@@ -6,7 +6,7 @@ use crate::codegen::{GenInstruction, KTypes, Procedure, Program, Register};
 
 pub use self::values::UntaggedValue;
 
-use super::{MutToUnknown, RefToUnknown};
+use super::{RefToUnknown};
 
 pub struct VM {
     program: Program,
@@ -35,12 +35,10 @@ impl VM {
 
         while frame.ip < proc.code.instructions.len() {
             match proc.code.instructions[frame.ip] {
-                GenInstruction::RustCallMut { rust_fn, arg, out } => {
-                    let (rr, mr) = frame.mut_register2(&self.types, proc, arg, out);
-                    (self.program.ffi_mut[rust_fn])(rr.downgrade(), mr)
-                }
-                GenInstruction::RustCallRef { rust_fn, arg } => {
-                    (self.program.ffi_ref[rust_fn])(frame.ref_register(&self.types, proc, arg))
+                GenInstruction::RustCall{ rust_fn, out, arg } => {
+                    assert!(out == arg); // TODO: Disable this for no asserts mode
+                    let reg = frame.ref_register(&self.types, proc, arg);
+                    self.program.ffi.call(rust_fn, reg);
                 }
                 GenInstruction::Jump { label } => {
                     frame.ip = label
@@ -72,26 +70,5 @@ impl Frame {
                 self.locals.ref_single_field(&locals, l) 
             }
         }
-    }
-
-    fn mut_register<'a>(&'a mut self, types: &KTypes, proc: &'a Procedure, reg: Register) -> MutToUnknown<'a> {
-        match reg {
-            Register::Arg(a) => { 
-                let args = types.get_structure(proc.args);
-                self.args.mut_single_field(&args, a) 
-            }
-            Register::Local(l) => { 
-                let locals = types.get_structure(proc.locals);
-                self.locals.mut_single_field(&locals, l) 
-            }
-        }
-    }
-
-    fn mut_register2<'a>(&'a mut self, types: &KTypes, proc: &'a Procedure, m1: Register, m2: Register) -> (MutToUnknown<'a>, MutToUnknown<'a>) {
-        assert_ne!(m1, m2);
-        let ptr = {self as *mut Self};
-        let m1_part = unsafe{&mut *ptr}.mut_register(types, proc, m1);
-        let m2_part = unsafe{&mut *ptr}.mut_register(types, proc, m2);
-        (m1_part, m2_part)
     }
 }

@@ -10,6 +10,10 @@ impl<T> Located<T> {
         (self.location(), self.value)
     }
 
+    pub fn split_ref(&self) -> (Located<()>, &T) {
+        (self.location(), &self.value)
+    }
+
     pub fn locmap<X>(self, f: impl Fn(T) -> X) -> Located<X> {
         Located {
             value: f(self.value), start: self.start, end: self.end

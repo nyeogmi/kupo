@@ -9,10 +9,7 @@ pub enum KType {
     // roughly &T
     RefPtr(Id<KStruct>),
 
-    // roughly &mut T
-    MutPtr(Id<KStruct>),
-
-    // &mut T, but uninitialized 
+    // &T, but uninitialized 
     OutPtr(Id<KStruct>),
 
     // roughly T

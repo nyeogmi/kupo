@@ -18,7 +18,6 @@ struct DefProtoArg {
 
 pub enum DefProtoArgType {
     Ref(Id<KStruct>),
-    Mut(Id<KStruct>),
     Out(Id<KStruct>),
 }
 
@@ -41,7 +40,6 @@ impl DefPrototypeBuilder {
             let name = arg.name.clone();
             match arg.arg_type {
                 DefProtoArgType::Ref(r) => { builder.push(t, name, KType::RefPtr(r)) }
-                DefProtoArgType::Mut(m) => { builder.push(t, name, KType::MutPtr(m)) }
                 DefProtoArgType::Out(o) => { builder.push(t, name, KType::OutPtr(o)) }
             }
         }

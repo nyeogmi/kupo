@@ -3,7 +3,7 @@ use std::slice;
 use moogle::Id;
 
 use crate::codegen::{KStruct, KTypes};
-use crate::runtime::{MutToUnknown, RefToUnknown};
+use crate::runtime::RefToUnknown;
 
 pub struct UntaggedValue {
     pub data: Box<[u8]>
@@ -22,8 +22,9 @@ impl UntaggedValue {
         // It could be dropped for the no-asserts version
         for i in 0..structure.single_fields.len() {
             // println!("initializing: {}", i);
-
-            value.mut_single_field(structure, i).initialize_asserts(structure.single_fields[i].type_data.type_id)
+            let reference = value.ref_single_field(structure, i);
+            let type_id = structure.single_fields[i].type_data.type_id;
+            unsafe { reference.initialize_metadata(type_id) }
         }
 
         value
@@ -35,13 +36,6 @@ impl UntaggedValue {
         let field = &structure.single_fields[single_field];
         let offset = field.offset;
         let len = field.type_data.layout.size();
-        RefToUnknown::from(&self.data[offset..offset + len])
-    }
-
-    pub(crate) fn mut_single_field(&mut self, structure: &KStruct, single_field: usize) -> MutToUnknown<'_> {
-        let field = &structure.single_fields[single_field];
-        let offset = field.offset;
-        let len = field.type_data.layout.size();
-        MutToUnknown::from(&mut self.data[offset..offset + len])
+        RefToUnknown::from(&self.data[offset] as *const u8, len)
     }
 }

@@ -54,7 +54,6 @@ impl KStructBuilder {
     pub fn push(&mut self, types: &mut KTypes, name: String, ty: KType) {
         match ty {
             KType::RefPtr(t) |
-            KType::MutPtr(t) |
             KType::OutPtr(t) => {
                 let real_struct = types.structs.get(t).unwrap();
                 let typedata = types.typedata_for_ref_to(real_struct);

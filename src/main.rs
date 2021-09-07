@@ -4,7 +4,10 @@ mod codegen;
 mod runtime;
 mod frontend;
 
+use std::cell::{Cell, RefCell};
 use std::fmt::Debug;
+
+use moogle::RawPom;
 
 use crate::codegen::*;
 use crate::runtime::{UntaggedValue, VM};
@@ -23,33 +26,37 @@ fn main_old() {
 
     let locals = KStructBuilder::new().build(&mut types);
 
+    let mut ffi = FFI::new();
+    let rust_fn = ffi.create_function(|arg| {
+        let arg2 = arg.cast::<&'static str>();
+        let a = arg2.get();
+        println!("Program sez: {}", a);
+    });
+
+    let def_prototypes = RawPom::new();
+    let mut procedures = RawPom::new();
+
+    let proc = procedures.insert(
+        Procedure{
+            args, locals,
+            code: Bytecode { instructions: vec![
+                Instruction::RustCall { rust_fn, out: Register::Arg(0), arg: Register::Arg(0) },
+            ] },
+        }
+    );
+
     let program = codegen::Program {
-        procedures: vec![
-            Procedure{
-                args, locals,
-                code: Bytecode { instructions: vec![
-                    Instruction::RustCallRef { rust_fn: 0, arg: Register::Arg(0) },
-                ] },
-            }
-        ],
-        ffi_ref: vec![
-            |arg| {
-                let arg2 = arg.cast::<&'static str>();
-                println!("Program sez: {}", arg2.get());
-            }
-        ],
-        ffi_mut: vec![],
+        def_prototypes, procedures, ffi,
     };
 
-    let args = program.procedures[0].args;
     let mut untagged = UntaggedValue::instantiate(&types, args);
-    untagged.mut_single_field(
+    untagged.ref_single_field(
         types.get_structure(args), 
         0
     ).cast::<&'static str>().initialize("Hello, world!");
 
     let vm = VM::new(program, types);
-    vm.call(0, untagged);
+    vm.call(proc, untagged);
 }
 
 fn main() {

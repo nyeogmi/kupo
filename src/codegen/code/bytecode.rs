@@ -1,3 +1,7 @@
+use moogle::Id;
+
+use super::ffi::RustFn;
+
 pub struct Bytecode {
     pub instructions: Vec<Instruction>,
 }
@@ -13,7 +17,7 @@ pub enum GenInstruction<Write, Read, Label> {
     Move { out: Write, arg: Read },
 
     // FFI to Rust
-    RustCall { rust_fn: usize, args: Write },
+    RustCall { rust_fn: Id<RustFn>, out: Write, arg: Read },  // note: arg and out are required to be the same
 
     Jump { label: Label },
     Return {},
@@ -41,8 +45,7 @@ impl<Write: PartialEq<Write>, Read: PartialEq<Read>, Label: PartialEq<Label>> Ge
     pub fn for_label(&self, mut f: impl FnMut(&Label)) {
         match self {
             GenInstruction::Move { out, arg } => {}
-            GenInstruction::RustCallMut { .. } => {}
-            GenInstruction::RustCallRef { .. } => {}
+            GenInstruction::RustCall { .. } => {}
             GenInstruction::Jump { label } => { f(label); }
             GenInstruction::Return {  } => {}
         }

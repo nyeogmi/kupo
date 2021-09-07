@@ -12,7 +12,7 @@ pub fn compile(source_code: Located<ast::Module>) -> Program {
     let mut program = Program::new();
 
     for item in source_code.value.items.iter() {
-        let (loc, it) = item.split();
+        let (loc, it) = item.split_ref();
         match it {
             ast::Item::Def(def) => { create_def_prototype(&program, loc.replace(&def)); }
             ast::Item::View(view) => { create_view_prototype(&program, loc.replace(&view)); }
