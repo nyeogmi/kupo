@@ -24,7 +24,7 @@ impl UntaggedValue {
             // println!("initializing: {}", i);
             let reference = value.ref_single_field(structure, i);
             let type_id = structure.single_fields[i].type_data.type_id;
-            unsafe { reference.initialize_metadata(type_id) }
+            reference.initialize_metadata(type_id) 
         }
 
         value
