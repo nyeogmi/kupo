@@ -12,6 +12,7 @@ categories = ["database-implementations"]
 edition = "2018"
 
 [dependencies]
-moogle = {version = "0.4.1"}
+moogle = {version = "0.4.2"}
 regex = "1.5"
 lazy_static = "1.4.0"
+disjoint-sets = "0.4"

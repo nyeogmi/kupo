@@ -4,7 +4,6 @@ mod codegen;
 mod runtime;
 mod frontend;
 
-use std::cell::{Cell, RefCell};
 use std::fmt::Debug;
 
 use moogle::RawPom;
@@ -17,7 +16,7 @@ fn main_old() {
     let mut types = KTypes::new();
     let string = types.single_copy::<&'static str>(
         |ptr, dbg| 
-        ptr.cast::<&'static str>().get().fmt(dbg).unwrap(),
+        ptr.cast_copy::<&'static str>().get().fmt(dbg).unwrap(),
     );
 
     let mut args = KStructBuilder::new();
@@ -28,7 +27,7 @@ fn main_old() {
 
     let mut ffi = FFI::new();
     let rust_fn = ffi.create_function(|arg| {
-        let arg2 = arg.cast::<&'static str>();
+        let arg2 = arg.cast_copy::<&'static str>();
         let a = arg2.get();
         println!("Program sez: {}", a);
     });
@@ -49,11 +48,11 @@ fn main_old() {
         def_prototypes, procedures, ffi,
     };
 
-    let mut untagged = UntaggedValue::instantiate(&types, args);
+    let untagged = UntaggedValue::instantiate(&types, args);
     untagged.ref_single_field(
         types.get_structure(args), 
         0
-    ).cast::<&'static str>().initialize("Hello, world!");
+    ).cast_copy::<&'static str>().initialize("Hello, world!");
 
     let vm = VM::new(program, types);
     vm.call(proc, untagged);

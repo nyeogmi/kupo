@@ -1,4 +1,4 @@
-use std::{alloc::Layout, any::{Any, TypeId}, cell::Cell, collections::HashMap, fmt::{self, Formatter}};
+use std::{alloc::Layout, any::{Any, TypeId}, cell::{Cell, RefCell}, collections::HashMap, fmt::{self, Formatter}};
 
 use crate::runtime::dynamism::*;
 use moogle::*;
@@ -26,7 +26,7 @@ impl KTypes {
         &mut self,
         debug_callback: fn(RefToUnknown<'_>, &mut fmt::Formatter<'_>),
     ) -> Id<KStruct> {
-        let rust_type = TypeId::of::<T>();
+        let rust_type = TypeId::of::<Cell<T>>();
 
         if let Some(t) = self.types.get(&rust_type) {
             return *t;
@@ -34,20 +34,20 @@ impl KTypes {
 
         self.promote_single(KSingle {
             type_id: Some(rust_type),
-            layout: Layout::new::<InPlace<T>>(),
+            layout: Layout::new::<InPlaceCell<T>>(),
             clone_callback: None,
             debug_callback: debug_callback,
             drop_callback: None,
         })
     }
 
-    pub fn single_clone<T: Any>(
+    pub fn single_nocopy<T: Any>(
         &mut self,
         clone_callback: fn(RefToUnknown<'_>, RefToUnknown<'_>),
         debug_callback: fn(RefToUnknown<'_>, &mut fmt::Formatter<'_>),
         drop_callback: Option<fn(RefToUnknown<'_>)>,
     ) -> Id<KStruct> {
-        let rust_type = TypeId::of::<T>();
+        let rust_type = TypeId::of::<RefCell<T>>();
 
         if let Some(t) = self.types.get(&rust_type) {
             return *t;
@@ -55,7 +55,7 @@ impl KTypes {
 
         self.promote_single(KSingle {
             type_id: Some(rust_type),
-            layout: Layout::new::<InPlace<T>>(),
+            layout: Layout::new::<InPlaceRefCell<T>>(),
             clone_callback: Some(clone_callback),
             debug_callback: debug_callback,
             drop_callback: drop_callback,
