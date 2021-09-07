@@ -12,6 +12,7 @@ use crate::codegen::*;
 use crate::runtime::{UntaggedValue, VM};
 use crate::frontend::parse_module;
 
+// TODO: Make sure my calling convention is actually followed holy shit!!!!!
 fn main_old() {
     let mut types = KTypes::new();
     let string = types.single_copy::<&'static str>(
